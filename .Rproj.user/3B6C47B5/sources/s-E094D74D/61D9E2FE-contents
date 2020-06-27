@@ -1,0 +1,87 @@
+# 3_Unique_ID
+# CYPRESS HILLS LOCAL DEVELOPMENT CORPORATION
+# AUTOR: Mariano Moran
+# DATE: 2/15/2019
+# PURPOSE: Import cleaned CHLDC master dataset in google, and create Unique IDs for every client
+# SEQUENCE: This is the 3rd program in the CHLDC-clients project 3/5
+
+library(dplyr) # manipulate dataframes
+library(readr) # read/write dataframes
+library(tidyr) # reshaping dataframes
+library(stringr) # string manipulation
+library(forcats) # factor manipulation
+library(reshape2) #cast and melt
+
+#########################################################################################################
+###############################  1. IMPORT ##############################################################  
+#########################################################################################################
+
+#Import master datasets
+###IDs will be E for a client only on the ETO dataset, C for Capricorn, X for Counselor Max, and M for more than 1 program
+
+master <- read_csv("DATA/CHLDC_master_2.csv") %>% #This master comes from cleaning in excel, consult README - Processing CHLDC Data in the google drive
+  mutate(DATASET = ifelse(DATASET == "CounselorMax","X", ifelse(DATASET =="Capricorn","C","E")))
+
+#Confirming the recoding worked
+master %>%
+  group_by(DATASET) %>%
+  summarise(CASE_YEAR = n()) %>%
+  arrange(desc(CASE_YEAR))
+
+#########################################################################################################
+##################### 2. UNIVERSAL IDs AND OTHER NEW VARIABLES ##########################################
+#########################################################################################################
+
+#REMEMBER TO FILL IN COORDINATES IF THEY ARE EMPTY
+## (the dataset has been cleaned to include only one FULL_NAME per client when he's across different programs,
+## adding numbers if there are more than 1 homonymous client across different programs and
+## adding numbers too if there are more than 1 homonymous client on unique programs
+### THUS Unique IDs are given to every different FULL_NAME to clients with more than 1 program AND
+### Unique IDs are given to every different combo of PROGRAM_UNIQUE_ID + FULL_NAME to clients on only 1 program
+
+############### 2.1.Assign ID to clients within more than 1 program ################
+##multiprograms dedupping by FULL_NAME 
+
+clients_multi <-
+  master %>%
+  filter(ACROSS_PROGRAMS=="x") %>%
+  group_by(FULL_NAME) %>%
+  arrange(FULL_NAME)
+
+#drop the unique id emtpy column
+clients_multi$CHLDC_UNI_ID <- NULL
+
+#dedup multiple clients across different programs
+clients_multi_namelist <-
+  distinct(clients_multi,FULL_NAME)
+
+#Create a unique ID for every name
+clients_multi_namelist$CHLDC_UNI_ID <- paste("M-",seq(1,1156), sep ="", collapse = NULL)
+
+#Relate that unique ID with the dataset of clients using different programs
+clients_multi_2 <-merge(clients_multi, clients_multi_namelist, by = "FULL_NAME")
+
+################ 2.2. Assign ID to clients of only one dataset ################
+## Assign one ID for each unique FULL_NAME + PROGRAM_ID
+#just combine DATASET AND UNIQUE PROGRAM IDs and thats that
+
+clients_unique <-
+  master %>%
+  filter(is.na(ACROSS_PROGRAMS)) %>%
+  group_by(FULL_NAME) %>%
+  mutate(CHLDC_UNI_ID = paste(DATASET,"-",PROGRAM_UNIQUE_ID, sep = "", collapse = NULL)) %>%
+  arrange(FULL_NAME)
+
+#join both multi and unique
+master_2 <-
+  bind_rows(clients_unique, clients_multi_2)  %>%
+  arrange(CASE_YEAR)
+
+#Write up CSVs
+write.csv(master_2, file = "DATA/CHLDC_master_3.csv")
+
+##########################################################################################################
+##########################################################################################################
+##########################################    END OF PROGRAM       #######################################
+##########################################################################################################
+##########################################################################################################

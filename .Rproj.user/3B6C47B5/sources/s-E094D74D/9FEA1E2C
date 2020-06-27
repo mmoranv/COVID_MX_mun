@@ -1,0 +1,29 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1593136405191.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "9FEA1E2C",
+    "lastKnownWriteTime" : 5292976843906638626,
+    "last_content_update" : 1593136405191,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "176087EE",
+        "caption" : "confirmados_mun_raw",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=confirmados_mun_raw&cache_key=176087EE",
+        "displayedObservations" : 2457,
+        "environment" : "",
+        "object" : "confirmados_mun_raw",
+        "preview" : 0,
+        "totalObservations" : 2457,
+        "variables" : 168
+    },
+    "relative_order" : 4,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}
