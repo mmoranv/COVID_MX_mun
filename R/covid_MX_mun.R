@@ -54,10 +54,11 @@ casos_covid_municipio <- "DATA/Casos_Diarios_Municipio_Confirmados_20200628.csv"
   ungroup()
 
 casos_covid_municipio[4:64] <-NULL  #No necesito las columnas por cada fecha ya, las tengo como filas
-casos_covid_municipio_1 <- casos_covid_municipio[1:3,65:68]
+
 #Asi, solo necesitas seleccionar que fecha quieres para graficar todos los casos de todos los municipios de cierta fecha
 
 #Ahora a intentarlo por melt y cast #CREO QUE NO SE PUEDE
+#Ya tengo los datos, ahora necesito mapearlo
 
 ####################################################################################
 ####################################################################################
