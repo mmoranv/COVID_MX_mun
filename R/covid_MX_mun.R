@@ -67,34 +67,33 @@ casos_covid_municipio_1 <- casos_covid_municipio[1:3,65:68]
 ####################################################################################
 
 #First I'll try to map one cumulative number of cases in one date
-#Import geojson municipal boundary map (copied the console response from https://datos.covid-19.conacyt.mx/#COMNac)
+#Option 1: Import geojson municipal boundary map (copied the console response from https://datos.covid-19.conacyt.mx/#COMNac)
 
 mexico_municipios = readOGR(dsn="C:/Users/Mariano/Documents/ArcGIS/MEX/COVID_19_SSA_Mex/ssa_covid_template.geojson")
 mexico_municipios <- geojson_read("C:/Users/Mariano/Documents/ArcGIS/MEX/COVID_19_SSA_Mex/ssa_covid_template.geojson",what="sp")
 
-#Import modified shapefile from INEGI, then leaflet
+# Plot mexico, try
+mexico <- leaflet(mexico_municipios_INEGI) #%>% 
+addTiles() %>% 
+  addPolygons()
+
+mexico #does not show anything
+
+#Option 2: Import modified shapefile from INEGI, then leaflet
 mexico_municipios_INEGI <- readOGR( 
   dsn= "C:/Users/Mariano/Documents/ArcGIS/MEX/Marco geoestadistico/municipios.shp", 
   layer="municipios",
   verbose=FALSE
 )
 
-# Clean the data object #aqui podria modificar los datos... pero no necesito hacerlo
-#library(dplyr)
-#world_spdf@data$POP2005[ which(world_spdf@data$POP2005 == 0)] = NA
-#world_spdf@data$POP2005 <- as.numeric(as.character(world_spdf@data$POP2005)) / 1000000 %>% round(2)
-
-
-# Plot mexico, try
-mypalette <- colorNumeric( palette="viridis", domain=world_spdf@data$POP2005, na.color="transparent")
-mypalette(c(45,43))
-mexico <- leaflet(mexico_municipios_INEGI) #%>% 
-  addTiles() %>% 
+mexico_2 <- leaflet(mexico_municipios) #%>% 
+addTiles() %>% 
   addPolygons()
 
-mexico
+mexico_2 #does not show anything
 
-?readOGR
+
+
 
 #Join to data
 
