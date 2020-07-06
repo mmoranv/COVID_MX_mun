@@ -10,7 +10,7 @@
 
 #Exportados:
 #C:\Users\Mariano\Documents\ArcGIS\MEX\COVID_19_SSA_Mex\EXPORTED
-
+install.packages("tidyverse")
 library(tidyverse)
 library(lubridate)
 library(gganimate)
@@ -21,10 +21,11 @@ require("plyr")
 library(rgdal)
 library(geojsonio)
 library(leaflet)
+library(sf)
+library(ggplot2)
+library(dplyr)
 
 setwd("C:/Users/Mariano/Documents/GitHub/COVID_MX_mun/")
-
-
 ####################################################################################
 ####################################################################################
 ##########################    1.IMPORT      ########################################
@@ -68,33 +69,46 @@ casos_covid_municipio[4:64] <-NULL  #No necesito las columnas por cada fecha ya,
 ####################################################################################
 
 #First I'll try to map one cumulative number of cases in one date
-#Option 1: Import geojson municipal boundary map (copied the console response from https://datos.covid-19.conacyt.mx/#COMNac)
-
-mexico_municipios = readOGR(dsn="C:/Users/Mariano/Documents/ArcGIS/MEX/COVID_19_SSA_Mex/ssa_covid_template.geojson")
-mexico_municipios <- geojson_read("C:/Users/Mariano/Documents/ArcGIS/MEX/COVID_19_SSA_Mex/ssa_covid_template.geojson",what="sp")
-
-# Plot mexico, try
-mexico <- leaflet(mexico_municipios_INEGI) #%>% 
-addTiles() %>% 
-  addPolygons()
-
-mexico #does not show anything
-
 #Option 2: Import modified shapefile from INEGI, then leaflet
-mexico_municipios_INEGI <- readOGR( 
-  dsn= "C:/Users/Mariano/Documents/ArcGIS/MEX/Marco geoestadistico/municipios.shp", 
-  layer="municipios",
-  verbose=FALSE
-)
 
-mexico_2 <- leaflet(mexico_municipios) #%>% 
-addTiles() %>% 
-  addPolygons()
-
-mexico_2 #does not show anything
+#via sf
+#using INEGI shapefile
+municipios_sf <- st_read(dsn = "C:/Users/Mariano/Documents/ArcGIS/MEX/Marco geoestadistico/municipios.shp") %>%
+  st_transform(4326)
 
 
+ggplot(data = municipios_sf) +
+  geom_sf()
 
+#Join data to map
+
+#It works! Let's build the map now!
+ggplot() +
+  geom_sf(data = mexico, color = "red", size = .3) +
+  scale_fill_manual(values = c("#cbc9e2", "#9e9ac8", "#756bb1", "#54278f"),
+                    labels = c("$2,000 or less", "$2,001-$2,500", "$2,501-$3,000", 
+                               "More than $3,000")) +
+  coord_sf(datum = NA) + #removes the grid
+  theme_void() + #removes the default theme
+  theme(
+    #legend.title = element_text(size=9),
+    plot.title = element_text(size= 12, hjust=0.01, color = "black", face = "bold", 
+                              margin = margin(b = -0.1, t = 0.4, l = 2, unit = "cm")),
+    #plot.subtitle = element_text(size= 10, hjust=0.01, color = "black", 
+    #margin = margin(b = -0.1, t = 0.43, l = 2, unit = "cm")),
+    plot.caption = element_text(size=9, color = "#4e4d47", face = "italic", 
+                                margin = margin(b = 0.3, r=-99, unit = "cm") ),
+    legend.position = c(0.15, .70)) +
+  labs(
+    fill = "", #no legend title
+    title = "Figure 5: Median Asking Rent by Community District, 2018")#,
+    #caption = sources)
+library(sf)
+nc <- st_read(system.file("shape/nc.shp", package = "sf"), quiet = TRUE)
+library(ggplot2)
+ggplot(nc) + geom_sf(aes(fill = AREA))
+mex <- ggplot(mexico) + aes(fill = cve_num)
+sessionInfo()
 
 #Join to data
 
