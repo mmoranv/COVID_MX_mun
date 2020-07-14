@@ -5,15 +5,15 @@
     "dirty" : false,
     "encoding" : "UTF-8",
     "folds" : "",
-    "hash" : "89275615",
+    "hash" : "2776846189",
     "id" : "952756E4",
-    "lastKnownWriteTime" : 1593139249,
-    "last_content_update" : 1593139249068,
+    "lastKnownWriteTime" : 1594438019,
+    "last_content_update" : 1594438019,
     "path" : "~/GitHub/COVID_MX_mun/R/covid_MX_mun.R",
     "project_path" : "R/covid_MX_mun.R",
     "properties" : {
         "cursorPosition" : "64,1",
-        "scrollLine" : "34"
+        "scrollLine" : "33"
     },
     "relative_order" : 1,
     "source_on_save" : false,

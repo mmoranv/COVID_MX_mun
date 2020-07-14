@@ -15,14 +15,14 @@ library(lubridate)
 library(gganimate)
 library(gifski)
 library(reshape2)
-require("maptools")
-require("plyr")
+library(maptools)
 library(rgdal)
-library(geojsonio)
 library(leaflet)
 library(sf)
 library(ggplot2)
+#library(plyr)
 library(dplyr)
+
 
 setwd("C:/Users/Mariano/Documents/GitHub/COVID_MX_mun/")
 ####################################################################################
@@ -31,20 +31,20 @@ setwd("C:/Users/Mariano/Documents/GitHub/COVID_MX_mun/")
 ####################################################################################
 ####################################################################################
 ####################################################################################
-str(cases)
+#Se deben limpiar las fechas del excel que bajas de los datos oficiales, para que esten en el formato YY-MM-DD
 casos_covid_municipio <- "DATA/Casos_Diarios_Municipio_Confirmados_20200628.csv" %>% 
   read_csv() %>% 
-  rename( #cambiar nombres a columnas para claridad y comodidad
+  rename(
     id = cve_ent,
     pop = poblacion,
     mun = nombre
   ) %>% 
   pivot_longer(
-    cols = matches("\\d{2}-\\d{2}-\\d{4}"), #los pivotes seran solo columnas que sean fechas
+    cols = matches("\\d{2}/\\d{2}/\\d{2}"), #los pivotes seran solo columnas que parezcan fechas, tuve que modificar manualmente para que las fechas sean leidas como MES-DIA-AÑO
     names_to = "fecha", 
-    #names_transform = list(fecha = dmy),
-    values_to = "casos_nuevos"#, #alargar (mas filas) el dataset agregando un valor/una fila por cada municipio + fecha
-    #values_transform = list(fecha = as.integer)
+    names_transform = list(fecha = dmy),
+    values_to = "casos_nuevos", #alargar (mas filas) el dataset agregando un valor/una fila por cada municipio + fecha
+    values_transform = list(fecha = as.integer)
   ) %>% 
   arrange(id, fecha) %>% 
   group_by(id) %>% #agrupar por municipio
@@ -53,8 +53,8 @@ casos_covid_municipio <- "DATA/Casos_Diarios_Municipio_Confirmados_20200628.csv"
   ungroup()
 
 casos_covid_municipio$casos_acum_ajustados <- format(casos_covid_municipio$casos_acum_ajustados, digits=2, nsmall=2) #acortar el numero de casos dividido por poblacion
-casos_covid_municipio[4:64] <-NULL  #No necesito las columnas por cada fecha ya, las tengo como filas
 casos_covid_municipio$casos_acum_ajustados <- as.numeric(casos_covid_municipio$casos_acum_ajustados)
+str(casos_covid_municipio)
 casos_covid_municipio
 
 #Asi, solo necesitas seleccionar que fecha quieres para graficar todos los casos de todos los municipios de cierta fecha
@@ -79,82 +79,47 @@ municipios_sf <- st_read(dsn = "C:/Users/Mariano/Documents/ArcGIS/MEX/Marco geoe
 
 
 #######Join data to map
-mexico <- municipios_sf %>%
+municipios_con_casos <- municipios_sf %>%
   mutate(id = cve_num) %>%
   full_join(casos_covid_municipio, by = "id")
-#Wait! How do I join it! I will have many rows (dates) per every municipality. What I need for mapping is only one row per municipality
-#maybe i have to join it by date?
-#or i could filter it by day and then map?
+#i could filter it by day and then map?
 
-#14052020
-mexico_14052020 <- mexico %>%
-  filter(fecha == "14-05-2020")
+#sample de fechas
+fechas <- unique(municipios_con_casos$fecha)
 
-#Map
-ggplot(data = municipios_sf) +
-  geom_sf()
+sample_fechas <- fechas[100:169]
 
-#It works! Let's build the map now!
-map_14052020 <- ggplot() +
-  geom_sf(data = mexico_14052020, color = "white", size = .2) +
+mex_sample <- municipios_con_casos %>% 
+  filter(fecha %in% c(sample_fechas))
+  
+#Mapa base
+
+mex_test <- municipios_con_casos %>% 
+  filter(fecha == "2020-06-27")
+
+fuente <- "Fuente: Secretaría de Salud, 2020"
+
+#construyendo el mapa para una fecha
+mapa_test <- ggplot() +
+  #geom_sf(data = municipios_sf, colour = "black", fill = "white") +
+  #geom_sf(data = mex_sample, aes(fill(casos_acum_ajustados, frame = fecha)))+
+  #geom_sf(data = mex_sample, aes(fill(casos_acum_ajustados)))+
+  geom_sf(data = mex_test, size = .1)+
   aes(fill = casos_acum_ajustados) +
-  scale_fill_gradient(low = "white", high = "red", na.value = "gray", guide = "legend")
-
-
-map_14052020
-
-#14062020
-mexico_14062020 <- mexico %>%
-  filter(fecha == "14-06-2020")
-
-#It works! Let's build the map now!
-map_14062020 <- ggplot() +
-  geom_sf(data = mexico_14062020, color = "white", size = .2) +
-  aes(fill = casos_acum_ajustados) +
-  scale_fill_gradient(low = "white", high = "red", na.value = "gray", guide = "legend")
-
-map_14062020
-
-
-?scale_fill_gradient()
-
-?palette
-palette
-?colorRamp
-?scale_fill_continuous
-
-
-
-(values = c("#cbc9e2", "#9e9ac8", "#756bb1", "#54278f"),
-                    labels = c(10,20,30,100)) #+
-  coord_sf(datum = NA) + #removes the grid
-  theme_void() + #removes the default theme
-  theme(
-    #legend.title = element_text(size=9),
-    plot.title = element_text(size= 12, hjust=0.01, color = "black", face = "bold", 
-                              margin = margin(b = -0.1, t = 0.4, l = 2, unit = "cm")),
-    #plot.subtitle = element_text(size= 10, hjust=0.01, color = "black", 
-    #margin = margin(b = -0.1, t = 0.43, l = 2, unit = "cm")),
-    plot.caption = element_text(size=9, color = "#4e4d47", face = "italic", 
-                                margin = margin(b = 0.3, r=-99, unit = "cm") ),
-    legend.position = c(0.15, .70)) +
-  labs(
-    fill = "", #no legend title
-    title = "Figure 5: Median Asking Rent by Community District, 2018")#,
-    #caption = sources)
-
-#Now iteratively
-
-  #trying
-  p <- mexico %>% 
-  # 10 random dates
-  filter(fecha %in% sample(unique(fecha), 10)) %>%
-  arrange(fecha) +
-  ggplot() +
-  geom_sf(data = mexico, color = "white", size = .2) +
-  aes(fill = casos_acum_ajustados) +
+    theme_void() + #removes the default theme
+  theme_light(base_line_size = .1) +
   scale_fill_gradient(low = "white", high = "red", na.value = "gray", guide = "legend") +
-  transition_time(fecha)
+  labs(title = "COVID-19: Casos confirmados en México por municipio", 
+       subtitle = mex_test$fecha,
+    caption = "Fuente: Secretaría de Salud, 2020")
+  #geom_smooth(aes(group = fecha),
+  #         method = "lm", 
+  #        show.legend = FALSE) +
+  #facet_wrap(~continent, scales = "free") +
+  #scale_x_log10() +
+  #transition_manual(fecha)
+mapa_test
+
 
 ####################################################################################
 ####################################################################################
@@ -164,12 +129,54 @@ palette
 ####################################################################################
 ?animate
 
-m <- map_14042020  
+
     
-animate(, duration = 5, fps = 20, width = 600, height = 600, renderer = gifski_renderer())
+animate(p, duration = 5, fps = 20, width = 600, height = 600, renderer = gifski_renderer())
 
 anim_save("covid-cases-plot.gif")
 
+library(tidyverse) # dev ggplot version required: devtools::install_github("hadley/ggplot2")
+library(sf)
+library(readxl)
+library(httr)
+library(ggmap)
+library(gganimate) # devtools::install_github("dgrtwo/gganimate")
+library(hrbrthemes) # devtools::install_github("hrbrmstr/hrbrthemes")
+
+
+# plot base map + filtered map with fill on winner/runner-up variable and frame as year for animation
+# then a point at each final location along with the place name text
+# set the projection and all the theme commands to give it a dark and mysterious aesthetic
+wc_map <- ggplot() +
+  geom_sf(data = world, colour = "#ffffff20", fill = "#2d2d2d60", size = .5) +
+  geom_sf(data = wc_geo, aes(fill = w_l, frame = Year)) +
+  geom_sf(data = locations_sf, aes(frame = Year), size = .2, colour = "#ffffff90") +
+  geom_text(data = locations_sf, aes(x, y, label = Location, frame = Year), 
+            colour = "white", fill = "#00000040", nudge_y = -5) +
+  coord_sf(crs = st_crs(world), datum = NA) +
+  labs(title = "FIFA World Cup Winners, Runners Up & Final Locations", x=NULL, y=NULL,
+       caption = "Culture of Insight / @paulcampbell91 / Source: Wikipedia") +
+  theme_modern_rc(axis = FALSE, base_size = 16, caption_size = 18) +
+  scale_fill_manual(values = c("#D9A441", "#A8A8A8"), name = NULL, labels = c("Winner", "Runner-Up")) +
+  theme(legend.position = c(0.9, 1.01), legend.direction = "horizontal", axis.text = element_blank(), 
+        panel.grid.minor = element_blank(), panel.grid.major = element_blank())
+
+municipios_mapa <- ggplot() +
+  geom_sf(data = municipios_sf, colour = "black", fill = "white")
+
+municipios_casos <- ggplot() +
+  geom_sf(data = mex_sample, size = .1)+
+  aes(fill = casos_acum_ajustados) +
+  theme_void() + #removes the default theme
+  theme_light(base_line_size = .1) +
+  scale_fill_gradient(low = "white", high = "red", na.value = "gray", guide = "legend") +
+  labs(title = "COVID-19: Casos confirmados en México por municipio", 
+       subtitle = mex_test$fecha,
+       caption = "Fuente: Secretaría de Salud, 2020") + 
+  transition_manual(fecha)
+
+animate(municipios_casos, duration = 7, fps = 10, width = 1000, height = 800, renderer = gifski_renderer())
+anim_save("covid-cases-plot.gif")
 ####################################################################################
 ####################################################################################
 ##########################    4.EXPORT     ####################################
